@@ -9,11 +9,8 @@
 
 @implementation MapKitView
 
-@synthesize buttonCallback;
 @synthesize childView;
 @synthesize mapView;
-@synthesize imageButton;
-
 
 -(CDVPlugin*) initWithWebView:(UIWebView*)theWebView
 {
@@ -39,9 +36,11 @@
     float width = ([options objectForKey:@"width"]) ? [[options objectForKey:@"width"] floatValue] : self.webView.bounds.size.width;
     float x = self.webView.bounds.origin.x;
     float y = self.webView.bounds.origin.y;
+
     if (IsAtLeastiOSVersion(@"7.0")) {
         y += [UIApplication sharedApplication].statusBarFrame.size.height;
     }
+
     BOOL atBottom = ([options objectForKey:@"atBottom"]) ? [[options objectForKey:@"atBottom"] boolValue] : NO;
 
     if(atBottom) {
@@ -58,15 +57,6 @@
 	self.mapView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 	self.childView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 
-
-//    CLLocationCoordinate2D centerCoord = { [[options objectForKey:@"lat"] floatValue] , [[options objectForKey:@"lon"] floatValue] };
-//	CLLocationDistance diameter = [[options objectForKey:@"diameter"] floatValue];
-
-//	MKCoordinateRegion region=[ self.mapView regionThatFits: MKCoordinateRegionMakeWithDistance(centerCoord,
-//                                                                                                diameter*(height / self.webView.bounds.size.width),
-//                                                                                                diameter*(height / self.webView.bounds.size.width))];
-//    [self.mapView setRegion:region animated:YES];
-
 	[self.childView addSubview:self.mapView];
 
 	[ [ [ self viewController ] view ] addSubview:self.childView];
@@ -82,19 +72,11 @@
 
 		mapView = nil;
 	}
-	if(self.imageButton)
-	{
-		[ self.imageButton removeFromSuperview];
-		//[ self.imageButton removeTarget:self action:@selector(closeButton:) forControlEvents:UIControlEventTouchUpInside];
-		self.imageButton = nil;
-
-	}
 	if(self.childView)
 	{
 		[ self.childView removeFromSuperview];
 		self.childView = nil;
 	}
-    self.buttonCallback = nil;
 }
 
 - (void)clearMapPins:(CDVInvokedUrlCommand *)command
@@ -136,18 +118,19 @@
 		annotation.selected = selected;
 
 		[self.mapView addAnnotation:annotation];
+    }
 
-        MKMapRect zoomRect = MKMapRectNull;
-        for (id <MKAnnotation> annotation in mapView.annotations) {
-            MKMapPoint annotationPoint = MKMapPointForCoordinate(annotation.coordinate);
-            MKMapRect pointRect = MKMapRectMake(annotationPoint.x - 500, annotationPoint.y - 500, 1000, 1000);
-            zoomRect = MKMapRectUnion(zoomRect, pointRect);
-        }
-        [self.mapView setVisibleMapRect:zoomRect animated:YES];
+//        MKMapPoint annotationPoint = MKMapPointForCoordinate(mapView.userLocation.coordinate);
+//        MKMapRect zoomRect = MKMapRectMake(annotationPoint.x - 500, annotationPoint.y - 500, 1000, 1000);
+    MKMapRect zoomRect = MKMapRectNull;
+    for (id <MKAnnotation> annotation in mapView.annotations) {
+        MKMapPoint annotationPoint = MKMapPointForCoordinate(annotation.coordinate);
+        MKMapRect pointRect = MKMapRectMake(annotationPoint.x - 500, annotationPoint.y - 500, 1000, 1000);
+        zoomRect = MKMapRectUnion(zoomRect, pointRect);
+    }
+    [self.mapView setVisibleMapRect:zoomRect animated:YES];
 
-        [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
-	}
-
+    [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
 }
 
 -(void)showMap:(CDVInvokedUrlCommand *)command
@@ -198,34 +181,6 @@
     [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
 }
 
-//Might need this later?
-/*- (void) mapView:(MKMapView *)mapView didUpdateUserLocation:(MKUserLocation *)userLocation
-{
-    MKCoordinateRegion mapRegion;
-    mapRegion.center = userLocation.coordinate;
-    mapRegion.span.latitudeDelta = 0.2;
-    mapRegion.span.longitudeDelta = 0.2;
-
-    [self.mapView setRegion:mapRegion animated: YES];
-}
-
-
-- (void)mapView:(MKMapView *)theMapView regionDidChangeAnimated: (BOOL)animated
-{
-    NSLog(@"region did change animated");
-    float currentLat = theMapView.region.center.latitude;
-    float currentLon = theMapView.region.center.longitude;
-    float latitudeDelta = theMapView.region.span.latitudeDelta;
-    float longitudeDelta = theMapView.region.span.longitudeDelta;
-
-    NSString* jsString = nil;
-    jsString = [[NSString alloc] initWithFormat:@"geo.onMapMove(\'%f','%f','%f','%f\');", currentLat,currentLon,latitudeDelta,longitudeDelta];
-    [self.webView stringByEvaluatingJavaScriptFromString:jsString];
-    [jsString autorelease];
-}
- */
-
-
 - (MKAnnotationView *) mapView:(MKMapView *)theMapView viewForAnnotation:(id <MKAnnotation>) annotation {
   
   if ([annotation class] != CDVAnnotation.class) {
@@ -250,33 +205,19 @@
 	else
 		annView.pinColor = MKPinAnnotationColorRed;
 
-	AsyncImageView* asyncImage = [[AsyncImageView alloc] initWithFrame:CGRectMake(0,0, 50, 32)];
-	asyncImage.tag = 999;
-	if (phAnnotation.imageURL)
-	{
-		NSURL *url = [[NSURL alloc] initWithString:phAnnotation.imageURL];
-		[asyncImage loadImageFromURL:url];
-	} 
-	else 
-	{
-		[asyncImage loadDefaultImage];
-	}
-
-	annView.leftCalloutAccessoryView = asyncImage;
-
-
-	if (self.buttonCallback && phAnnotation.index!=-1)
-	{
-
-		UIButton *myDetailButton = [UIButton buttonWithType:UIButtonTypeDetailDisclosure];
-		myDetailButton.frame = CGRectMake(0, 0, 23, 23);
-		myDetailButton.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
-		myDetailButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentCenter;
-		myDetailButton.tag=phAnnotation.index;
-		annView.rightCalloutAccessoryView = myDetailButton;
-		[ myDetailButton addTarget:self action:@selector(checkButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
-
-	}
+//	AsyncImageView* asyncImage = [[AsyncImageView alloc] initWithFrame:CGRectMake(0,0, 50, 32)];
+//	asyncImage.tag = 999;
+//	if (phAnnotation.imageURL)
+//	{
+//		NSURL *url = [[NSURL alloc] initWithString:phAnnotation.imageURL];
+//		[asyncImage loadImageFromURL:url];
+//	}
+//	else
+//	{
+//		[asyncImage loadDefaultImage];
+//	}
+//
+//	annView.leftCalloutAccessoryView = asyncImage;
 
 	if(phAnnotation.selected)
 	{
@@ -292,13 +233,6 @@
 	
 }
 
-- (void) checkButtonTapped:(id)button 
-{
-	UIButton *tmpButton = button;
-	NSString* jsString = [NSString stringWithFormat:@"%@(\"%i\");", self.buttonCallback, tmpButton.tag];
-	[self.webView stringByEvaluatingJavaScriptFromString:jsString];
-}
-
 - (void)dealloc
 {
     if (self.mapView)
@@ -307,17 +241,11 @@
 		[ self.mapView removeFromSuperview];
         self.mapView = nil;
 	}
-	if(self.imageButton)
-	{
-		[ self.imageButton removeFromSuperview];
-        self.imageButton = nil;
-	}
 	if(childView)
 	{
 		[ self.childView removeFromSuperview];
         self.childView = nil;
 	}
-    self.buttonCallback = nil;
 }
 
 @end
