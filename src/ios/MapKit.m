@@ -39,6 +39,9 @@
     float width = ([options objectForKey:@"width"]) ? [[options objectForKey:@"width"] floatValue] : self.webView.bounds.size.width;
     float x = self.webView.bounds.origin.x;
     float y = self.webView.bounds.origin.y;
+    if (IsAtLeastiOSVersion(@"7.0")) {
+        y += [UIApplication sharedApplication].statusBarFrame.size.height;
+    }
     BOOL atBottom = ([options objectForKey:@"atBottom"]) ? [[options objectForKey:@"atBottom"] boolValue] : NO;
 
     if(atBottom) {
@@ -56,13 +59,14 @@
 	self.childView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 
 
-    CLLocationCoordinate2D centerCoord = { [[options objectForKey:@"lat"] floatValue] , [[options objectForKey:@"lon"] floatValue] };
-	CLLocationDistance diameter = [[options objectForKey:@"diameter"] floatValue];
+//    CLLocationCoordinate2D centerCoord = { [[options objectForKey:@"lat"] floatValue] , [[options objectForKey:@"lon"] floatValue] };
+//	CLLocationDistance diameter = [[options objectForKey:@"diameter"] floatValue];
 
-	MKCoordinateRegion region=[ self.mapView regionThatFits: MKCoordinateRegionMakeWithDistance(centerCoord,
-                                                                                                diameter*(height / self.webView.bounds.size.width),
-                                                                                                diameter*(height / self.webView.bounds.size.width))];
-    [self.mapView setRegion:region animated:YES];
+//	MKCoordinateRegion region=[ self.mapView regionThatFits: MKCoordinateRegionMakeWithDistance(centerCoord,
+//                                                                                                diameter*(height / self.webView.bounds.size.width),
+//                                                                                                diameter*(height / self.webView.bounds.size.width))];
+//    [self.mapView setRegion:region animated:YES];
+
 	[self.childView addSubview:self.mapView];
 
 	[ [ [ self viewController ] view ] addSubview:self.childView];
@@ -132,6 +136,15 @@
 		annotation.selected = selected;
 
 		[self.mapView addAnnotation:annotation];
+
+        MKMapRect zoomRect = MKMapRectNull;
+        for (id <MKAnnotation> annotation in mapView.annotations) {
+            MKMapPoint annotationPoint = MKMapPointForCoordinate(annotation.coordinate);
+            MKMapRect pointRect = MKMapRectMake(annotationPoint.x - 500, annotationPoint.y - 500, 1000, 1000);
+            zoomRect = MKMapRectUnion(zoomRect, pointRect);
+        }
+        [self.mapView setVisibleMapRect:zoomRect animated:YES];
+
         [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
 	}
 
