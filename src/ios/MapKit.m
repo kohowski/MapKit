@@ -125,10 +125,10 @@
     MKMapRect zoomRect = MKMapRectNull;
     for (id <MKAnnotation> annotation in mapView.annotations) {
         MKMapPoint annotationPoint = MKMapPointForCoordinate(annotation.coordinate);
-        MKMapRect pointRect = MKMapRectMake(annotationPoint.x - 500, annotationPoint.y - 500, 1000, 1000);
+        MKMapRect pointRect = MKMapRectMake(annotationPoint.x, annotationPoint.y, 0.1, 0.1);
         zoomRect = MKMapRectUnion(zoomRect, pointRect);
     }
-    [self.mapView setVisibleMapRect:zoomRect animated:YES];
+    [self.mapView setVisibleMapRect:zoomRect edgePadding:UIEdgeInsetsMake(40, 10, 10, 10) animated:YES];
 
     [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
 }
@@ -147,7 +147,7 @@
 
 - (void)hideMap:(CDVInvokedUrlCommand *)command
 {
-    if (!self.mapView || self.childView.hidden==YES) 
+    if (!self.mapView || self.childView.hidden==YES)
 	{
 		return;
 	}
