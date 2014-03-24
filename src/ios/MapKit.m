@@ -6,6 +6,7 @@
 #import "MapKit.h"
 #import "CDVAnnotation.h"
 #import "AsyncImageView.h"
+#import <AddressBook/AddressBook.h>
 
 @implementation MapKitView
 
@@ -219,6 +220,9 @@
 //
 //	annView.leftCalloutAccessoryView = asyncImage;
 
+    UIButton *directionsButton = [UIButton buttonWithType:UIButtonTypeDetailDisclosure];
+    annView.rightCalloutAccessoryView = directionsButton;
+
 	if(phAnnotation.selected)
 	{
 		[self performSelector:@selector(openAnnotation:) withObject:phAnnotation afterDelay:1.0];
@@ -231,6 +235,24 @@
 {
 	[ self.mapView selectAnnotation:annotation animated:YES];  
 	
+}
+
+- (void)mapView:(MKMapView *)mapView annotationView:(MKAnnotationView *)view calloutAccessoryControlTapped:(UIControl *)control
+{
+    NSDictionary *options = @{
+        MKLaunchOptionsDirectionsModeKey:MKLaunchOptionsDirectionsModeDriving
+    };
+
+    NSDictionary *addressDict = @{(NSString*)kABPersonAddressStreetKey : view.annotation.subtitle};
+
+    MKPlacemark *placemark = [[MKPlacemark alloc]
+                              initWithCoordinate:view.annotation.coordinate
+                              addressDictionary:addressDict];
+
+    MKMapItem *mapItem = [[MKMapItem alloc] initWithPlacemark:placemark];
+    mapItem.name = view.annotation.title;
+
+    [mapItem openInMapsWithLaunchOptions:options];
 }
 
 - (void)dealloc
