@@ -26,11 +26,8 @@ var MapKit = function() {
 // Returns default params, overrides if provided with values
 function setDefaults(options) {
     var defaults = {
-        height: 460,
-		diameter: 1000,
-		atBottom: true,
-		lat: 49.281468,
-		lon: -123.104446
+        height: 100,
+		atBottom: true
     };
 
     if (options) {
@@ -47,6 +44,10 @@ MapKit.prototype = {
 	showMap: function(success, error, options) {
 	    options = setDefaults(options);
 		exec(success, error, 'MapKit', 'showMap', [options]);
+	},
+
+    openDrivingWithData: function(data, success, error) {
+		exec(success, error, 'MapKit', 'openDrivingWithData', [data]);
 	},
 
 	addMapPins: function(pins, success, error) {

@@ -32,4 +32,6 @@
 
 - (void)addMapPins:(CDVInvokedUrlCommand *)command;
 
+- (void)openDrivingWithData:(CDVInvokedUrlCommand *)command;
+
 @end

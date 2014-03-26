@@ -121,8 +121,6 @@
 		[self.mapView addAnnotation:annotation];
     }
 
-//        MKMapPoint annotationPoint = MKMapPointForCoordinate(mapView.userLocation.coordinate);
-//        MKMapRect zoomRect = MKMapRectMake(annotationPoint.x - 500, annotationPoint.y - 500, 1000, 1000);
     MKMapRect zoomRect = MKMapRectNull;
     for (id <MKAnnotation> annotation in mapView.annotations) {
         MKMapPoint annotationPoint = MKMapPointForCoordinate(annotation.coordinate);
@@ -130,6 +128,19 @@
         zoomRect = MKMapRectUnion(zoomRect, pointRect);
     }
     [self.mapView setVisibleMapRect:zoomRect edgePadding:UIEdgeInsetsMake(40, 10, 10, 10) animated:YES];
+
+    [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
+}
+
+- (void)openDrivingWithData:(CDVInvokedUrlCommand *)command
+{
+    NSDictionary *pinData = command.arguments[0];
+    CLLocationCoordinate2D pinCoord = { [[pinData objectForKey:@"lat"] floatValue] , [[pinData objectForKey:@"lon"] floatValue] };
+    NSString *title=[[pinData valueForKey:@"title"] description];
+    NSString *subTitle=[[pinData valueForKey:@"snippet"] description];
+    CDVAnnotation *annotation = [[CDVAnnotation alloc] initWithCoordinate:pinCoord index:index title:title subTitle:subTitle imageURL:nil];
+
+    [self performSelector:@selector(openDriving:) withObject: annotation ];
 
     [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK] callbackId:command.callbackId];
 }
@@ -233,24 +244,29 @@
 
 -(void)openAnnotation:(id <MKAnnotation>) annotation
 {
-	[ self.mapView selectAnnotation:annotation animated:YES];  
-	
+	[ self.mapView selectAnnotation:annotation animated:YES];
+
 }
 
 - (void)mapView:(MKMapView *)mapView annotationView:(MKAnnotationView *)view calloutAccessoryControlTapped:(UIControl *)control
 {
-    NSDictionary *options = @{
+    [self performSelector:@selector(openDriving:) withObject:view.annotation ];
+}
+
+-(void)openDriving:(id <MKAnnotation>) annotation
+{
+	NSDictionary *options = @{
         MKLaunchOptionsDirectionsModeKey:MKLaunchOptionsDirectionsModeDriving
     };
 
-    NSDictionary *addressDict = @{(NSString*)kABPersonAddressStreetKey : view.annotation.subtitle};
+    NSDictionary *addressDict = @{(NSString*)kABPersonAddressStreetKey : annotation.subtitle};
 
     MKPlacemark *placemark = [[MKPlacemark alloc]
-                              initWithCoordinate:view.annotation.coordinate
+                              initWithCoordinate:annotation.coordinate
                               addressDictionary:addressDict];
 
     MKMapItem *mapItem = [[MKMapItem alloc] initWithPlacemark:placemark];
-    mapItem.name = view.annotation.title;
+    mapItem.name = annotation.title;
 
     [mapItem openInMapsWithLaunchOptions:options];
 }
